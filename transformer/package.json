@@ -1,0 +1,12 @@
+{
+  "name": "transform",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "bufferutility": "^3.0.2",
+    "macho": "^1.4.0",
+    "node-fetch": "^3.3.2"
+  }
+}
