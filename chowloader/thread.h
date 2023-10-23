@@ -19,8 +19,11 @@ typedef struct DummyOpaque {
   ChowdrenThread *thread;
 } DummyOpaque;
 
+extern double ms_divide;
+
 JSValue createThreadObject(JSContext *ctx);
 JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+JSValue sleepThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 JSValue stopThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 int launchFunction(void *_args);
 

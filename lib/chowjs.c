@@ -139,6 +139,10 @@ void JS_SetOpaque(JSValue obj, void *opaque){
   return;
 }
 
+int JS_ToFloat64(JSContext *ctx, double *pres, JSValueConst val){
+  return 0;
+}
+
 // Semaphore Synchronization for Multithreading Allocation
 
 int chowdren_main(){

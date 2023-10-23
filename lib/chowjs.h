@@ -188,6 +188,7 @@ JSClassID JS_NewClassID(JSClassID *pclass_id);
 int JS_NewClass(JSRuntime *rt, JSClassID class_id, JSClassDef *class_def);
 JSValue JS_NewObjectClass(JSContext *ctx, int class_id);
 void JS_SetOpaque(JSValue obj, void *opaque);
+int JS_ToFloat64(JSContext *ctx, double *pres, JSValueConst val);
 
 // Semaphore Synchronization for Multithreading Allocation
 

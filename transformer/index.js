@@ -73,6 +73,7 @@ let native_funcs = {
   _stb_vorbis_open_memory: 0x80BF850,
   _ChowdrenPreloadAudio: 0x80D0300,
   _chowdren_main: 0x8089BB0,
+  _JS_ToFloat64: 0xBAE1B70,
 }
 
 let native_datas = {
@@ -159,7 +160,7 @@ let firstData = true;
 let functions = [];
 let datas = [];
 for(let i = 0; i < symbols.length; i++){
-  if(symbols[i].n_sect === 4 || symbols[i].n_sect === 5){
+  if(symbols[i].n_sect > 3){
     if(firstData){
       firstData = false;
       dataOffset = symbols[i].n_value;

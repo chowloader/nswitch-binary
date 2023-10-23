@@ -6,8 +6,11 @@ JSValue createThreadObject(JSContext *ctx){
   JSValue _launch = JS_NewCFunction2(ctx, &launchThread, "launch", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, thread, "launch", _launch);
 
+  JSValue _sleep = JS_NewCFunction2(ctx, &sleepThread, "sleep", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, thread, "sleep", _sleep);
+
   JSValue _stop = JS_NewCFunction2(ctx, &stopThread, "stop", 1, JS_CFUNC_generic, 0);
-  JS_SetPropertyStr(ctx, thread, "stop", _launch);
+  JS_SetPropertyStr(ctx, thread, "stop", _stop);
 
   return thread;
 }
@@ -33,6 +36,16 @@ JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueCon
     opaque->thread = thread;
     JS_SetOpaque(js_thread, opaque);
     return js_thread;
+  }
+  return JS_UNDEFINED;
+}
+
+double ms_divide = 1000.0;
+
+JSValue sleepThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  double time;
+  if(argc == 0 && !JS_ToFloat64(ctx, &time, argv[0])){
+    platform_sleep(time / ms_divide);
   }
   return JS_UNDEFINED;
 }
