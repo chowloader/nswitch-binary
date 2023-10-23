@@ -1,7 +1,11 @@
 import { BufferUtility, FileSystemModule } from 'bufferutility';
 import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import fetch from 'node-fetch';
 import macho from 'macho';
+
+import * as url from 'url';
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 // config
 
@@ -11,9 +15,9 @@ let native_funcs = {
   _JS_SetPropertyStr: 0xBADF670,
   _JS_NewObject: 0xBAD6000,
   _JS_NewCFunction2: 0xBAD6110,
-  _qjs_malloc: 0xBBA9330,
-  _qjs_free: 0xBBA94D0,
-  _qjs_realloc: 0xBBA9550,
+  _native_qjs_malloc: 0xBBA9330,
+  _native_qjs_free: 0xBBA94D0,
+  _native_qjs_realloc: 0xBBA9550,
   _operator_new: 0xBCDD470,
   _JS_ToCStringLen2: 0xBAD51E0,
   _JS_NewStringLen: 0xBAD3250,
@@ -67,7 +71,8 @@ let native_funcs = {
   _build_backtrace: 0xBAF4D00,
   _std_string_append: 0xBCDD500,
   _stb_vorbis_open_memory: 0x80BF850,
-  _ChowdrenPreloadAudio: 0x80D0300
+  _ChowdrenPreloadAudio: 0x80D0300,
+  _chowdren_main: 0x8089BB0,
 }
 
 let native_datas = {
@@ -77,7 +82,7 @@ let native_datas = {
   _ChowJSRuntime: 0xC136AC0,
   _ChowJSContext: 0xC136AB8,
   _CanvasClassID: 0xC136A8C,
-  _JSVALOffset: 0xC131E10
+  _JSVALOffset: 0xC131E10,
 }
 
 let entry_funcs = { // Calls address
@@ -87,28 +92,34 @@ let entry_funcs = { // Calls address
   _hookJSVARREF: { forward: false, addr: 0xBB3FEF8 },
   _hookJSVAL: { forward: false, addr: 0xBB3FF78 },
   _hookBuildBacktrace: { forward: false, addr: [ 0xBAF2F1C, 0xBAF56F0, 0xBAF5888, 0xBB053D4, 0xBB75CE0 ] },
-  _hookThrow: { forward: false, addr: [ 0xA3DEEFC ] },
-  _hookFonts: { forward: false, addr: [ 0x80B1398 ] },
+  _hookThrow: { forward: false, addr: 0xA3DEEFC },
+  _hookFonts: { forward: false, addr: 0x80B1398 },
+  _semaphore_init: { forward: true, addr: 0xBC5E1A0 },
 }
+
+let qjs_mem_funcs = 0xBF13640;
 
 let base_addr = 0xBAB3FE8;
 let base_data = 0xC13AA00;
 
 let data_buffer = Buffer.alloc(0);
 
+let custom_patches = [
+  "000CC67C F5FFFF17" // Finish a function that has been misaligned
+];
+
 (async () => {
 
-let buf = new BufferUtility("../chowloader.o", {
+let buf = new BufferUtility(join(__dirname, "..", "chowloader.o"), {
   module: FileSystemModule
 });
 
-let file = macho.parse(readFileSync("../chowloader.o"));
+let file = macho.parse(readFileSync(join(__dirname, "..", "chowloader.o")));
 let symtab = file.cmds.find(c => c.type === "symtab");
 let TEXT = file.cmds.find(c => c.name === "__TEXT");
 let text = TEXT.sections.find(c => c.sectname === "__text");
 let cstring = TEXT.sections.find(c => c.sectname === "__cstring");
-let dataOffset = TEXT.sections.slice(-1)[0].offset + TEXT.sections.slice(-1)[0].size;
-let dataBuffer = file.cmds.find(c => c.name === "__DATA").sections[0].data;
+let dataBuffer = Buffer.concat(file.cmds.find(c => c.name === "__DATA").sections.map(c => c.data));
 
 buf.position = symtab.stroff;
 
@@ -143,10 +154,16 @@ for(let sym of symbols){
 
 symbols.sort((a,b) => (a.n_value - b.n_value));
 
+let dataOffset = 0;
+let firstData = true;
 let functions = [];
 let datas = [];
 for(let i = 0; i < symbols.length; i++){
-  if(symbols[i].n_sect === 4){
+  if(symbols[i].n_sect === 4 || symbols[i].n_sect === 5){
+    if(firstData){
+      firstData = false;
+      dataOffset = symbols[i].n_value;
+    }
     datas.push({
       name: symbols[i].str,
       offset: symbols[i].n_value - dataOffset
@@ -342,11 +359,19 @@ if(debug){
   }
 }
 
-let final_buf = Buffer.concat([...functions.map(f => f.data), cstring.data]);
-
 function toIPSAddr(num){
   return ((typeof num === "string" ? Number(`0x${num}`) : num) - 0x8004000).toString(16).padStart(8, "0").toUpperCase();
 }
+
+function toPointerAddr(num){
+  return ((typeof num === "string" ? Number(`0x${num}`) : num) - 0x8004000).toString(16).padStart(16, "0").toUpperCase().match(/.{1,2}/g).reverse().join("");
+}
+
+custom_patches.push(`${toIPSAddr(qjs_mem_funcs)} ${toPointerAddr(functions.find(c => c.name === "_qjs_malloc").base_addr)}`);
+custom_patches.push(`${toIPSAddr(qjs_mem_funcs+8)} ${toPointerAddr(functions.find(c => c.name === "_qjs_free").base_addr)}`);
+custom_patches.push(`${toIPSAddr(qjs_mem_funcs+16)} ${toPointerAddr(functions.find(c => c.name === "_qjs_realloc").base_addr)}`);
+
+let final_buf = Buffer.concat([...functions.map(f => f.data), cstring.data]);
 
 function splitChunk(base, buf){
   let addr = [];
@@ -366,7 +391,7 @@ let pchtxt = `@nsobid-318E91DDED917C19DEE42932587DA4C4AD83CB68
 @flag offset_shift 0x100
 
 @enabled
-${splitChunk(base_addr, final_buf) + (data_buffer.length > 0 ? splitChunk(base_data, data_buffer) : "")}
+${splitChunk(base_addr, final_buf) + (data_buffer.length > 0 ? "\n" + splitChunk(base_data, data_buffer) : "")}
 ${await (async () => {
   let entries = [];
   for(let entry_name of Object.keys(entry_funcs)){
@@ -383,9 +408,9 @@ ${await (async () => {
   }
   return entries.join("\n");
 })()}
-000CC67C F5FFFF17
+${custom_patches.join("\n")}
 @stop`;
 
-writeFileSync("main.pchtxt", pchtxt, "utf8")
+writeFileSync(join(__dirname, "main.pchtxt"), pchtxt, "utf8");
 
 })()

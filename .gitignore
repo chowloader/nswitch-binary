@@ -1,3 +1,6 @@
-chowloader.o.dSYM/
-chowloader.o
-transformer/main.pchtxt
+**/.DS_Store
+**/main.pchtxt
+**/node_modules
+**/chowloader.o
+**/chowloader.o.dSYM
+**/.vscode

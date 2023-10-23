@@ -5,5 +5,5 @@ This repo contain the source of the code in the patch of the console version and
 The build command is
 
 ```console
-clang -O0 -g ./**/*.c -o chowloader.o
+clang -O0 -g ./**/*.c -mcpu=cortex-a57 -o chowloader.o
 ```

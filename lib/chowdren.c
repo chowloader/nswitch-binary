@@ -1,113 +1,113 @@
 #include "chowdren.h"
 
 void BaseFile_initialize(void *bf, const char* file, const char* flag){
-    return;
+  return;
 }
 
 size_t BaseFile_get_size(void *bf){
-    return 0;
+  return 0;
 }
 
 void BaseFile_read(void *bf, void *buf, size_t size){
-    return;
+  return;
 }
 
 void BaseFile_close(void *bf){
-    return;
+  return;
 }
 
 size_t strlen(const char *s){
-    return 0;
+  return 0;
 }
 
 void *operator_new(size_t size){
-    return NULL;
+  return NULL;
 }
 
 void operator_delete(void*ptr){
-    return;
+  return;
 }
 
 int stbi_info_from_memory(void * buffer, int len, int *x, int *y, int *comp){
-    return 0;
+  return 0;
 }
 
 void ChowdrenCacheImage(const char* path, int width, int height){
-    return;
+  return;
 }
 
 char *strcpy(char *destination, const char *source){
-    return NULL;
+  return NULL;
 }
 
 int strcmp(const char* s1, const char *s2){
-    return 0;
+  return 0;
 }
 
 void platform_begin_draw(){
-    return;
+  return;
 }
 
 void Render_set_view(int x, int y, int width, int height){
-    return;
+  return;
 }
 
 void Render_clear(uint32_t color){
-    return;
+  return;
 }
 
 void platform_swap_buffers(){
-    return;
+  return;
 }
 
 void ImageUtils_update(){
-    return;
+  return;
 }
 
 uint32_t FontUtils_parse_color(const char *str){
-    return 0;
+  return 0;
 }
 
 void Thread_start(ChowdrenThread* this, int (*func)(void *), void *arg, char const* name){
-    return;
+  return;
 }
 
 bool Thread_isNull(ChowdrenThread* this){
-    return false;
+  return false;
 }
 
 void Thread_join(ChowdrenThread* this){
-    return;
+  return;
 }
 
 void Thread_detach(ChowdrenThread* this){
-    return;
+  return;
 }
 
 void Thread_delete(ChowdrenThread* this){
-    return;
+  return;
 }
 
 void platform_sleep(double time){
-    return;
+  return;
 }
 
 void *cmemcpy(void *dest, void *src, size_t n){
-    return NULL;
+  return NULL;
 }
 
 ChowdrenCachedImage *get_cached_image(int imageid){
-    return NULL;
+  return NULL;
 }
 
 std_string *std_string_append(std_string *str1, const char *str2){
-    return NULL;
+  return NULL;
 }
 
 stb_vorbis *stb_vorbis_open_memory(void *data, int len, int *error, void *alloc_buffer){
-    return NULL;
+  return NULL;
 }
 
 void ChowdrenPreloadAudio(const char *p1, const char *p2, size_t file_size, size_t samples, unsigned int sample_rate, int channels){
-    return;
+  return;
 }

@@ -1,16 +1,26 @@
 #ifndef __CHOWLOADER_THREAD_H
 #define __CHOWLOADER_THREAD_H
 
+#include "../lib/imports.h"
+
 typedef struct ChowloaderThreadArgs {
-    JSContext *ctx;
-    const char* eval_text;
-    size_t eval_size;
-    JSValueConst this_val;
-    int argc;
-    JSValueConst *argv;
+  JSContext *ctx;
+  JSValueConst func;
+  JSValueConst this_val;
+  int argc;
+  JSValueConst *argv;
 } ChowloaderThreadArgs;
 
-int launchFunction(void *_args);
+typedef struct DummyOpaque {
+  int64_t placeholder1;
+  int64_t placeholder2;
+  int64_t placeholder3;
+  ChowdrenThread *thread;
+} DummyOpaque;
+
+JSValue createThreadObject(JSContext *ctx);
 JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+JSValue stopThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+int launchFunction(void *_args);
 
 #endif

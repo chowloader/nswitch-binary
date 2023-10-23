@@ -6,45 +6,45 @@
 #include <stdbool.h>
 
 typedef struct basic_string_long {
-    size_t length;
-    size_t capacity;
-    const char* str;
+  size_t length;
+  size_t capacity;
+  const char* str;
 } basic_string_long;
 
 typedef struct basic_string_short {
-    unsigned char size;
-    char str[0];
+  unsigned char size;
+  char str[0];
 } basic_string_short;
 
 typedef struct std_string {
-    union {
-        char first;
-        basic_string_long lstr;
-        basic_string_short sstr;
-    };
+  union {
+    char first;
+    basic_string_long lstr;
+    basic_string_short sstr;
+  };
 } std_string;
 
 typedef struct ChowdrenThread {
-    void *thread;
-    void *weak;
-    bool unk;
+  void *thread;
+  void *weak;
+  bool unk;
 } ChowdrenThread;
 
 typedef struct ChowdrenCanvas {
-    uint64_t unk;
-    int width;
-    int height;
+  uint64_t unk;
+  int width;
+  int height;
 } ChowdrenCanvas;
 
 typedef struct ChowdrenCachedImage {
-    uint8_t unk[32];
-    int width;
-    int height;
+  uint8_t unk[32];
+  int width;
+  int height;
 } ChowdrenCachedImage;
 
 typedef struct stb_vorbis {
-    unsigned int sample_rate;
-    int channels;
+  unsigned int sample_rate;
+  int channels;
 } stb_vorbis;
 
 void BaseFile_initialize(void *bf, const char* file, const char* flag);

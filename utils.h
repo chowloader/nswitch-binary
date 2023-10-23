@@ -1,6 +1,8 @@
 #ifndef __UTILS_H
 #define __UTILS_H
 
+#include "lib/imports.h"
+
 std_string *to_std_string(const char *str);
 const char *to_char_string(std_string *str);
 size_t std_string_len(std_string *str);

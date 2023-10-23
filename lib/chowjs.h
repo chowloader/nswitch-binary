@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 #define JS_EVAL_TYPE_GLOBAL   (0 << 0)
 #define JS_EVAL_TYPE_MODULE   (1 << 0)
@@ -86,6 +87,16 @@ typedef struct JSContext {
     JSValue global_var_obj;
 } JSContext;
 
+typedef void JSClassFinalizer(JSRuntime *rt, JSValue val);
+
+typedef struct JSClassDef {
+  const char *class_name;
+  JSClassFinalizer *finalizer;
+  void *gc_mark;
+  void *call;
+  void *exotic;
+} JSClassDef;
+
 typedef JSValue JSCFunction(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 typedef enum JSCFunctionEnum {
@@ -140,12 +151,15 @@ enum {
 #define JS_UNDEFINED JS_MKVAL(JS_TAG_UNDEFINED, 0)
 #define JS_EXCEPTION JS_MKVAL(JS_TAG_EXCEPTION, 0)
 
+extern JSContext* ChowJSContext;
+extern JSRuntime* ChowJSRuntime;
+
 int JS_SetPropertyStr(JSContext *ctx, JSValueConst this_obj, const char *prop, JSValue val);
 JSValue JS_NewObject(JSContext *ctx);
 JSValue JS_NewCFunction2(JSContext *ctx, JSCFunction *func, const char *name, int length, JSCFunctionEnum cproto, int magic);
-void *qjs_malloc(JSMallocState *state, size_t size);
-void qjs_free(JSMallocState *state, void *ptr);
-void *qjs_realloc(JSMallocState *state, void *ptr, size_t size);
+void *native_qjs_malloc(JSMallocState *state, size_t size);
+void native_qjs_free(JSMallocState *state, void *ptr);
+void *native_qjs_realloc(JSMallocState *state, void *ptr, size_t size);
 const char *JS_ToCStringLen2(JSContext *ctx, size_t *plen, JSValueConst val1, BOOL cesu8);
 JSValue JS_NewStringLen(JSContext *ctx, const char *buf, size_t buf_len);
 void JS_FreeCString(JSContext *ctx, const char* str);
@@ -170,5 +184,23 @@ JSValue JS_Eval(JSContext *ctx, const char *input, size_t input_len, const char 
 void *JS_GetOpaque(JSValueConst obj, JSClassID class_id);
 void build_backtrace(JSContext *ctx, JSValueConst error_obj, const char *filename, int line_num, int backtrace_flags);
 JSValue JS_Throw(JSContext *ctx, JSValue obj);
+JSClassID JS_NewClassID(JSClassID *pclass_id);
+int JS_NewClass(JSRuntime *rt, JSClassID class_id, JSClassDef *class_def);
+JSValue JS_NewObjectClass(JSContext *ctx, int class_id);
+void JS_SetOpaque(JSValue obj, void *opaque);
+
+// Semaphore Synchronization for Multithreading Allocation
+
+int chowdren_main();
+
+extern atomic_int_fast64_t semaphore;
+
+int semaphore_init();
+void semaphore_wait();
+void semaphore_signal();
+
+void *qjs_malloc(JSMallocState *state, size_t size);
+void qjs_free(JSMallocState *state, void *ptr);
+void *qjs_realloc(JSMallocState *state, void *ptr, size_t size);
 
 #endif

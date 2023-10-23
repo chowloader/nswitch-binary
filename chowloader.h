@@ -1,6 +1,9 @@
 #ifndef __CHOWLOADER_H
 #define __CHOWLOADER_H
 
+#include "lib/imports.h"
+#include "utils.h"
+
 #define CHOWLOADER_DEBUG
 
 int initChowLoaderObject(JSContext *ctx, JSValueConst this_obj, const char *prop, JSValue val);
