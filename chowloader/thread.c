@@ -40,12 +40,10 @@ JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueCon
   return JS_UNDEFINED;
 }
 
-double ms_divide = 1000.0;
-
 JSValue sleepThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   double time;
   if(argc == 0 && !JS_ToFloat64(ctx, &time, argv[0])){
-    platform_sleep(time / ms_divide);
+    platform_sleep(time);
   }
   return JS_UNDEFINED;
 }
