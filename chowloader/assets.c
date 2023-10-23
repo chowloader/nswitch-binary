@@ -1,15 +1,15 @@
 #include "assets.h"
 
 JSValue createAssetsObject(JSContext *ctx){
-  JSValue renderer = JS_NewObject(ctx);
+  JSValue assets = JS_NewObject(ctx);
 
   JSValue _loadImage = JS_NewCFunction2(ctx, &loadImage, "loadImage", 1, JS_CFUNC_generic, 0);
-  JS_SetPropertyStr(ctx, renderer, "loadImage", _loadImage);
+  JS_SetPropertyStr(ctx, assets, "loadImage", _loadImage);
 
   JSValue _loadAudio = JS_NewCFunction2(ctx, &loadAudio, "loadAudio", 1, JS_CFUNC_generic, 0);
-  JS_SetPropertyStr(ctx, renderer, "loadAudio", _loadAudio);
+  JS_SetPropertyStr(ctx, assets, "loadAudio", _loadAudio);
 
-  return renderer;
+  return assets;
 }
 
 JSValue loadImage(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){

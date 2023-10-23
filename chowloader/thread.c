@@ -1,16 +1,15 @@
 #include "thread.h"
-#include "renderer.h"
 
 JSValue createThreadObject(JSContext *ctx){
-  JSValue renderer = JS_NewObject(ctx);
+  JSValue thread = JS_NewObject(ctx);
 
   JSValue _launch = JS_NewCFunction2(ctx, &launchThread, "launch", 1, JS_CFUNC_generic, 0);
-  JS_SetPropertyStr(ctx, renderer, "launch", _launch);
+  JS_SetPropertyStr(ctx, thread, "launch", _launch);
 
   JSValue _stop = JS_NewCFunction2(ctx, &stopThread, "stop", 1, JS_CFUNC_generic, 0);
-  JS_SetPropertyStr(ctx, renderer, "stop", _launch);
+  JS_SetPropertyStr(ctx, thread, "stop", _launch);
 
-  return renderer;
+  return thread;
 }
 
 JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){

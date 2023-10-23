@@ -2,6 +2,7 @@
 #define __CHOWLOADER_THREAD_H
 
 #include "../lib/imports.h"
+#include "renderer.h"
 
 typedef struct ChowloaderThreadArgs {
   JSContext *ctx;
