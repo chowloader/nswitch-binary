@@ -78,7 +78,9 @@ let native_funcs = {
   _JS_NewObjectClass: 0xBAD5E50,
   _JS_NewClassID: 0xBAD4730,
   _JS_NewClass: 0xBAD4790,
-  _JS_SetOpaque: 0xBAD66B0
+  _JS_SetOpaque: 0xBAD66B0,
+  _JS_EnqueueJob: 0xBACE9A0,
+  _JS_IsFunction: 0xBAD8CB0
 }
 
 let native_datas = {

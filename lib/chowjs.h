@@ -135,6 +135,8 @@ enum {
     JS_TAG_BIG_DECIMAL = 15
 };
 
+typedef JSValue JSJobFunc(JSContext *ctx, int argc, JSValueConst *argv);
+
 #define JS_VALUE_GET_TAG(v) (uint8_t)((v) >> 48)
 #define JS_VALUE_GET_INT(v) (int64_t)(v & 0xFFFFFFFFFFFFL)
 #define JS_VALUE_GET_UINT(v) (uint64_t)(v & 0xFFFFFFFFFFFFL)
@@ -189,6 +191,8 @@ int JS_NewClass(JSRuntime *rt, JSClassID class_id, JSClassDef *class_def);
 JSValue JS_NewObjectClass(JSContext *ctx, int class_id);
 void JS_SetOpaque(JSValue obj, void *opaque);
 int JS_ToFloat64(JSContext *ctx, double *pres, JSValueConst val);
+int JS_EnqueueJob(JSContext *ctx, JSJobFunc *job_func, int argc, JSValueConst *argv);
+int JS_IsFunction(JSContext *ctx, JSValueConst val);
 
 // Semaphore Synchronization for Multithreading Allocation
 

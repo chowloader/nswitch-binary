@@ -28,6 +28,9 @@ int initChowLoaderObject(JSContext *ctx, JSValueConst this_obj, const char *prop
   JSValue _executeJobs = JS_NewCFunction2(ctx, &executeJobs, "executeJobs", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, chowloader, "executeJobs", _executeJobs);
 
+  JSValue _nextTick = JS_NewCFunction2(ctx, &nextTick, "nextTick", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, chowloader, "nextTick", _nextTick);
+
   JS_SetPropertyStr(ctx, chowloader, "assets", createAssetsObject(ctx));
 
   JS_SetPropertyStr(ctx, chowloader, "renderer", createRendererObject(ctx));
@@ -44,17 +47,26 @@ int initChowLoaderObject(JSContext *ctx, JSValueConst this_obj, const char *prop
   return 1;
 }
 
+JSValue executeJobs(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  JS_ExecutePendingJob(ctx->rt, &ctx);
+  return JS_UNDEFINED;
+}
+
+JSValue nextTick(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  if(argc > 0 && JS_IsFunction(ctx, argv[0]) && !JS_EnqueueJob(ctx, nextTickJob, argc, argv)) return JS_TRUE;
+  return JS_FALSE;
+}
+
+JSValue nextTickJob(JSContext *ctx, int argc, JSValueConst *argv){
+  return JS_Call(ctx, argv[0], JS_GetGlobalObject(ctx), argc-1, argv+1);
+}
+
 #ifdef CHOWLOADER_DEBUG
 JSValue debugger(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   __builtin_debugtrap();
   return JS_UNDEFINED;
 }
 #endif
-
-JSValue executeJobs(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
-  JS_ExecutePendingJob(ctx->rt, &ctx);
-  return JS_UNDEFINED;
-}
 
 int main(){
   return 0;

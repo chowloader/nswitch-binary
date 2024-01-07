@@ -143,6 +143,14 @@ int JS_ToFloat64(JSContext *ctx, double *pres, JSValueConst val){
   return 0;
 }
 
+int JS_EnqueueJob(JSContext *ctx, JSJobFunc *job_func, int argc, JSValueConst *argv){
+  return 0;
+}
+
+int JS_IsFunction(JSContext *ctx, JSValueConst val){
+  return 0;
+}
+
 // Semaphore Synchronization for Multithreading Allocation
 
 int chowdren_main(){
