@@ -7,6 +7,7 @@
 JSValue createAssetsObject(JSContext *ctx);
 JSValue loadImage(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 JSValue loadAudio(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-std_string *hookFonts(std_string *str1, const char *str2);
+std_string *hookFonts(std_string *path, const char *ext);
+void hookBorder(std_string *path, void *imageid, void *width, void *height);
 
 #endif

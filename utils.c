@@ -3,24 +3,24 @@
 std_string *to_std_string(const char *str){
   size_t len = strlen(str);
   std_string *s;
-  if(len > 127){ // long
+  //if(len > 127){ // long
     s = operator_new(24);
     s->lstr.length = (len + 16) & 0xFFFFFFFFFFFFFFF0;
     s->lstr.capacity = len;
     s->lstr.str = operator_new(s->lstr.length);
     strcpy((char *)s->lstr.str, str);
     s->first |= 0x1;
-  } else { // short
+  /*} else { // short
     s = operator_new(len + 2);
     s->sstr.size = len * 2;
     strcpy((char *)&s->sstr.str, str);
-  }
+  }*/
   return s;
 }
 
 size_t std_string_len(std_string *str){
   if((str->first & 0x1) == 0){ // short
-    return str->sstr.size / 2;
+    return str->sstr.size >> 1;
   } else { // long
     return str->lstr.capacity;
   }

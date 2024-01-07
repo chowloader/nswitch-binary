@@ -151,11 +151,6 @@ int chowdren_main(){
 
 atomic_int_fast64_t semaphore = 1;
 
-int semaphore_init(){
-  semaphore = 1;
-  return chowdren_main();
-}
-
 void semaphore_wait(){
   while(!semaphore){};
   semaphore--;

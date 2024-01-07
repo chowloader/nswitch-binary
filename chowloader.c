@@ -5,7 +5,21 @@
 #include "chowloader/renderer.h"
 #include "chowloader/thread.h"
 
+int initChowLoader(){
+  semaphore = 1;
+  return chowdren_main();
+}
+
 int initChowLoaderObject(JSContext *ctx, JSValueConst this_obj, const char *prop, JSValue val){
+  JS_NewClassID(&ThreadClassID);
+  JSClassDef *thread_def = operator_new(sizeof(thread_def));
+  thread_def->class_name = "ThreadHandle";
+  thread_def->finalizer = threadFinalizer;
+  thread_def->gc_mark = NULL;
+  thread_def->call = NULL;
+  thread_def->exotic = NULL;
+  JS_NewClass(ctx->rt, ThreadClassID, thread_def);
+
   JS_SetPropertyStr(ctx, this_obj, prop, val);
 
   JSValue chowloader = JS_NewObject(ctx);

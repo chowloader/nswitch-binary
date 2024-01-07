@@ -111,3 +111,7 @@ stb_vorbis *stb_vorbis_open_memory(void *data, int len, int *error, void *alloc_
 void ChowdrenPreloadAudio(const char *p1, const char *p2, size_t file_size, size_t samples, unsigned int sample_rate, int channels){
   return;
 }
+
+int ImageUtils_get_image(std_string *path, void *imageid, void *width, void *height){
+  return 0;
+}

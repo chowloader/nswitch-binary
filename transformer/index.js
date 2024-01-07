@@ -9,7 +9,7 @@ const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 // config
 
-let debug = false;
+let debug = true;
 
 let native_funcs = {
   _JS_SetPropertyStr: 0xBADF670,
@@ -74,6 +74,11 @@ let native_funcs = {
   _ChowdrenPreloadAudio: 0x80D0300,
   _chowdren_main: 0x8089BB0,
   _JS_ToFloat64: 0xBAE1B70,
+  _ImageUtils_get_image: 0x808C820,
+  _JS_NewObjectClass: 0xBAD5E50,
+  _JS_NewClassID: 0xBAD4730,
+  _JS_NewClass: 0xBAD4790,
+  _JS_SetOpaque: 0xBAD66B0
 }
 
 let native_datas = {
@@ -87,6 +92,7 @@ let native_datas = {
 }
 
 let entry_funcs = { // Calls address
+  _initChowLoader: { forward: true, addr: 0xBC5E1A0 },
   _initChowLoaderObject: { forward: false, addr: 0xBBAA0EC },
   _initAOT: { forward: false, addr: 0xBBAA290 },
   _hookJSAOT: { forward: false, addr: 0xBB3FDF8 },
@@ -95,7 +101,7 @@ let entry_funcs = { // Calls address
   _hookBuildBacktrace: { forward: false, addr: [ 0xBAF2F1C, 0xBAF56F0, 0xBAF5888, 0xBB053D4, 0xBB75CE0 ] },
   _hookThrow: { forward: false, addr: 0xA3DEEFC },
   _hookFonts: { forward: false, addr: 0x80B1398 },
-  _semaphore_init: { forward: true, addr: 0xBC5E1A0 },
+  _hookBorder: { forward: false, addr: 0xBB9FD58 },
 }
 
 let qjs_mem_funcs = 0xBF13640;
@@ -355,8 +361,13 @@ for(let func of functions){
 }
 
 if(debug){
+  console.log('Functions:');
   for(let func of functions){
     console.log(`${func.name}: 0x${func.base_addr.toString(16).toUpperCase()}`);
+  }
+  console.log('\nDatas:');
+  for(let data of datas.filter(d => d.new_offset).sort((a,b)=>(a.new_offset-b.new_offset))){
+    console.log(`${data.name}: 0x${data.new_offset.toString(16).toUpperCase()}`)
   }
 }
 

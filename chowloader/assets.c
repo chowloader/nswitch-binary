@@ -62,3 +62,19 @@ std_string *hookFonts(std_string *path, const char *ext){
   }
   return s;
 }
+
+void hookBorder(std_string *path, void *imageid, void *width, void *height){
+  char *str = (char *)to_char_string(path);
+  if(str[13] == '.' && str[14] == '/'){
+    str += 13;
+  }
+  size_t len = strlen(str);
+  if(str[len - 8] == '.' && str[len - 7] == 'p' && str[len - 6] == 'n' && str[len - 5] == 'g'){
+    len -= 4;
+    str[len] = '\0';
+  }
+  std_string *s = to_std_string((const char *)str);
+  ImageUtils_get_image(s, imageid, width, height);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+}
