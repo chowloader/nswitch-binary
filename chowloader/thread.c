@@ -63,7 +63,7 @@ JSValue launchThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueCon
 
 JSValue sleepThread(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   double time;
-  if(argc == 0 && !JS_ToFloat64(ctx, &time, argv[0])){
+  if(argc != 0 && !JS_ToFloat64(ctx, &time, argv[0])){
     platform_sleep(time);
   }
   return JS_UNDEFINED;
