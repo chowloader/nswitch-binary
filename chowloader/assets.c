@@ -6,8 +6,17 @@ JSValue createAssetsObject(JSContext *ctx){
   JSValue _loadImage = JS_NewCFunction2(ctx, &loadImage, "loadImage", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, assets, "loadImage", _loadImage);
 
+  JSValue _isImageLoaded = JS_NewCFunction2(ctx, &isImageLoaded, "isImageLoaded", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, assets, "isImageLoaded", _isImageLoaded);
+
   JSValue _loadAudio = JS_NewCFunction2(ctx, &loadAudio, "loadAudio", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, assets, "loadAudio", _loadAudio);
+
+  JSValue _isAudioLoaded = JS_NewCFunction2(ctx, &isAudioLoaded, "isAudioLoaded", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, assets, "isAudioLoaded", _isAudioLoaded);
+
+  JSValue _isAudioPreloaded = JS_NewCFunction2(ctx, &isAudioPreloaded, "isAudioPreloaded", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, assets, "isAudioPreloaded", _isAudioPreloaded);
 
   return assets;
 }
@@ -22,6 +31,17 @@ JSValue loadImage(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst 
   stbi_info_from_memory(image_buf, size, &width, &height, NULL);
   qjs_free(&ctx->rt->malloc_state, image_buf);
   ChowdrenCacheImage(path, width, height);
+  return JS_TRUE;
+}
+
+JSValue isImageLoaded(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  const char *path = convertPathJS(ctx, argv[0]);
+  if(!path) return JS_FALSE;
+  std_string *s = to_std_string(path);
+  void *image = SearchImageHashTable(&ImageHashTable, s);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+  if(!image) return JS_FALSE;
   return JS_TRUE;
 }
 
@@ -41,6 +61,28 @@ JSValue loadAudio(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst 
   uint32_t granulepos = *(uint32_t*)(end_audio_buf + 6);
   qjs_free(&ctx->rt->malloc_state, audio_buf);
   ChowdrenPreloadAudio(path+2, path, size, granulepos * vorbis->channels, vorbis->sample_rate, vorbis->channels);
+  return JS_TRUE;
+}
+
+JSValue isAudioLoaded(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  const char *path = convertPathJS(ctx, argv[0]);
+  if(!path) return JS_FALSE;
+  std_string *s = to_std_string(path);
+  void *audio = SearchAudioHashTable(&AudioHashTable, s);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+  if(!audio) return JS_FALSE;
+  return JS_TRUE;
+}
+
+JSValue isAudioPreloaded(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  const char *path = convertPathJS(ctx, argv[0]);
+  if(!path) return JS_FALSE;
+  std_string *s = to_std_string(path);
+  void *audio = SearchAudioPreloadHashTable(&AudioPreloadHashTable, s);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+  if(!audio) return JS_FALSE;
   return JS_TRUE;
 }
 

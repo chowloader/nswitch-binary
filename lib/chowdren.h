@@ -76,5 +76,11 @@ std_string *std_string_append(std_string *str1, const char *str2);
 stb_vorbis *stb_vorbis_open_memory(void *data, int len, int *error, void *alloc_buffer);
 void ChowdrenPreloadAudio(const char *p1, const char *p2, size_t file_size, size_t samples, unsigned int sample_rate, int channels);
 int ImageUtils_get_image(std_string *path, void *imageid, void *width, void *height);
+extern int64_t ImageHashTable;
+extern int64_t AudioPreloadHashTable;
+extern int64_t AudioHashTable;
+void *SearchImageHashTable(void *hash_table, std_string *path);
+void *SearchAudioPreloadHashTable(void *hash_table, std_string *path);
+void *SearchAudioHashTable(void *hash_table, std_string *path);
 
 #endif

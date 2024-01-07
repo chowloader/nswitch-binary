@@ -80,7 +80,10 @@ let native_funcs = {
   _JS_NewClass: 0xBAD4790,
   _JS_SetOpaque: 0xBAD66B0,
   _JS_EnqueueJob: 0xBACE9A0,
-  _JS_IsFunction: 0xBAD8CB0
+  _JS_IsFunction: 0xBAD8CB0,
+  _SearchImageHashTable: 0x80AFA08,
+  _SearchAudioPreloadHashTable: 0x80D6188,
+  _SearchAudioHashTable: 0x80D8BC0,
 }
 
 let native_datas = {
@@ -91,6 +94,9 @@ let native_datas = {
   _ChowJSContext: 0xC136AB8,
   _CanvasClassID: 0xC136A8C,
   _JSVALOffset: 0xC131E10,
+  _ImageHashTable: 0xC0ADF48,
+  _AudioPreloadHashTable: 0xC0C90E8,
+  _AudioHashTable: 0xC0C9138
 }
 
 let entry_funcs = { // Calls address
@@ -304,7 +310,7 @@ for(let func of functions){
 
   for(let i = 0; i < instructions.length; i++){
     if(instructions[i].type === "BL"){
-      instructions[i].hex = await createBranch(findByOffset(base_func.start + parseNumber(instructions[i].str)), func.base_addr + i * 4, false);
+      instructions[i].hex = await createBranch(findByOffset(base_func.start + parseNumber(instructions[i].str)), func.base_addr + instructions[i].offset, false);
     } else if(instructions[i].type === "ADRP"){
       let adrp = instructions[i];
       let next_ins = instructions[++i];
@@ -315,9 +321,9 @@ for(let func of functions){
       let ins;
 
       if(next_ins.type === "ADD"){
-        let new_offset = findByOffset(process_adrp(base_func.start + i * 4) + parseNumber(adrp.str) + parseNumber(next_ins.str));
+        let new_offset = findByOffset(process_adrp(base_func.start + adrp.offset) + parseNumber(adrp.str) + parseNumber(next_ins.str));
   
-        let adrp_offset = process_adrp(new_offset) - process_adrp(func.base_addr + i * 4);
+        let adrp_offset = process_adrp(new_offset) - process_adrp(func.base_addr + adrp.offset);
         ins = `ADRP ${register}, #${adrp_offset < 0 ? '-' : ''}0x${adrp_offset.toString(16).replace('-', '')}\nADD ${register}, ${register}, #0x${(new_offset & 0xFFF).toString(16)}`;
       } else { // DATA
         let data_off;
@@ -338,7 +344,7 @@ for(let func of functions){
           data_buffer = Buffer.concat([data_buffer, dataBuffer.subarray(data.offset, data.offset + data.size)]);
         }
         
-        let adrp_offset = process_adrp(data_off) - process_adrp(func.base_addr + i * 4);
+        let adrp_offset = process_adrp(data_off) - process_adrp(func.base_addr + adrp.offset);
         let final_offset = data_off & 0xFFF;
 
         ins = `ADRP ${register}, #${adrp_offset < 0 ? '-' : ''}0x${adrp_offset.toString(16).replace('-', '')}\n`

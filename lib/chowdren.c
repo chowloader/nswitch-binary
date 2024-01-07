@@ -115,3 +115,19 @@ void ChowdrenPreloadAudio(const char *p1, const char *p2, size_t file_size, size
 int ImageUtils_get_image(std_string *path, void *imageid, void *width, void *height){
   return 0;
 }
+
+int64_t ImageHashTable = 1;
+int64_t AudioPreloadHashTable = 1;
+int64_t AudioHashTable = 1;
+
+void *SearchImageHashTable(void *hash_table, std_string *path){
+  return NULL;
+}
+
+void *SearchAudioPreloadHashTable(void *hash_table, std_string *path){
+  return NULL;
+}
+
+void *SearchAudioHashTable(void *hash_table, std_string *path){
+  return NULL;
+}
