@@ -9,6 +9,9 @@ JSValue createAssetsObject(JSContext *ctx){
   JSValue _isImageLoaded = JS_NewCFunction2(ctx, &isImageLoaded, "isImageLoaded", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, assets, "isImageLoaded", _isImageLoaded);
 
+  JSValue _isImagePreloaded = JS_NewCFunction2(ctx, &isImagePreloaded, "isImagePreloaded", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, assets, "isImagePreloaded", _isImagePreloaded);
+
   JSValue _loadAudio = JS_NewCFunction2(ctx, &loadAudio, "loadAudio", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, assets, "loadAudio", _loadAudio);
 
@@ -38,7 +41,19 @@ JSValue isImageLoaded(JSContext *ctx, JSValueConst this_val, int argc, JSValueCo
   const char *path = convertPathJS(ctx, argv[0]);
   if(!path) return JS_FALSE;
   std_string *s = to_std_string(path);
-  void *image = SearchImageHashTable(&ImageHashTable, s);
+  ChowdrenPreloadedImage *image = SearchImageHashTable(&ImageHashTable, s);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+  if(!image) return JS_FALSE;
+  if(IsImageLoading(image->imageId)) return JS_FALSE;
+  return JS_TRUE;
+}
+
+JSValue isImagePreloaded(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  const char *path = convertPathJS(ctx, argv[0]);
+  if(!path) return JS_FALSE;
+  std_string *s = to_std_string(path);
+  ChowdrenPreloadedImage *image = SearchImageHashTable(&ImageHashTable, s);
   operator_delete((void *)s->lstr.str);
   operator_delete((void *)s);
   if(!image) return JS_FALSE;

@@ -120,7 +120,7 @@ int64_t ImageHashTable = 1;
 int64_t AudioPreloadHashTable = 1;
 int64_t AudioHashTable = 1;
 
-void *SearchImageHashTable(void *hash_table, std_string *path){
+ChowdrenPreloadedImage *SearchImageHashTable(void *hash_table, std_string *path){
   return NULL;
 }
 
@@ -130,4 +130,8 @@ void *SearchAudioPreloadHashTable(void *hash_table, std_string *path){
 
 void *SearchAudioHashTable(void *hash_table, std_string *path){
   return NULL;
+}
+
+int IsImageLoading(uint32_t id){
+  return 0;
 }

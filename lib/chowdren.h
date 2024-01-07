@@ -42,6 +42,11 @@ typedef struct ChowdrenCachedImage {
   int height;
 } ChowdrenCachedImage;
 
+typedef struct ChowdrenPreloadedImage {
+  uint8_t unk[40];
+  uint32_t imageId;
+} ChowdrenPreloadedImage;
+
 typedef struct stb_vorbis {
   unsigned int sample_rate;
   int channels;
@@ -79,8 +84,9 @@ int ImageUtils_get_image(std_string *path, void *imageid, void *width, void *hei
 extern int64_t ImageHashTable;
 extern int64_t AudioPreloadHashTable;
 extern int64_t AudioHashTable;
-void *SearchImageHashTable(void *hash_table, std_string *path);
+ChowdrenPreloadedImage *SearchImageHashTable(void *hash_table, std_string *path);
 void *SearchAudioPreloadHashTable(void *hash_table, std_string *path);
 void *SearchAudioHashTable(void *hash_table, std_string *path);
+int IsImageLoading(uint32_t id);
 
 #endif

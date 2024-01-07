@@ -84,6 +84,7 @@ let native_funcs = {
   _SearchImageHashTable: 0x80AFA08,
   _SearchAudioPreloadHashTable: 0x80D6188,
   _SearchAudioHashTable: 0x80D8BC0,
+  _IsImageLoading: 0x809A980
 }
 
 let native_datas = {
