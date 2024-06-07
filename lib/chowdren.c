@@ -135,3 +135,7 @@ void *SearchAudioHashTable(void *hash_table, std_string *path){
 int IsImageLoading(uint32_t id){
   return 0;
 }
+
+uint8_t *stbi_zlib_decode_malloc(void *buffer, int len, int *outlen){
+  return NULL;
+}

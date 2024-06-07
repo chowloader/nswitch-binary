@@ -87,3 +87,26 @@ void *readFile(JSContext *ctx, const char *cpath, size_t *size){
   qjs_free(&ctx->rt->malloc_state, basefile);
   return buf;
 }
+
+uint16_t swap16(uint16_t num){
+  return (num >> 8) |
+         (num & 0xFF) << 8;
+}
+
+uint32_t swap32(uint32_t num){
+  return (num >> 24) |
+         ((num >> 16) & 0xFF) << 8 |
+         ((num >> 8) & 0xFF) << 16 |
+         (num & 0xFF) << 24;
+}
+
+uint64_t swap64(uint64_t num){
+  return (num >> 56) |
+         ((num >> 48) & 0xFF) << 8 |
+         ((num >> 40) & 0xFF) << 16 |
+         ((num >> 32) & 0xFF) << 24 |
+         ((num >> 24) & 0xFF) << 32 |
+         ((num >> 16) & 0xFF) << 40 |
+         ((num >> 8) & 0xFF) << 48 |
+         (num & 0xFF) << 56;
+}

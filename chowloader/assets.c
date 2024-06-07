@@ -3,6 +3,9 @@
 JSValue createAssetsObject(JSContext *ctx){
   JSValue assets = JS_NewObject(ctx);
 
+  JSValue _applyImageDiff = JS_NewCFunction2(ctx, &applyImageDiff, "applyImageDiff", 1, JS_CFUNC_generic, 0);
+  JS_SetPropertyStr(ctx, assets, "applyImageDiff", _applyImageDiff);
+
   JSValue _loadImage = JS_NewCFunction2(ctx, &loadImage, "loadImage", 1, JS_CFUNC_generic, 0);
   JS_SetPropertyStr(ctx, assets, "loadImage", _loadImage);
 
@@ -22,6 +25,77 @@ JSValue createAssetsObject(JSContext *ctx){
   JS_SetPropertyStr(ctx, assets, "isAudioPreloaded", _isAudioPreloaded);
 
   return assets;
+}
+
+JSValue applyImageDiff(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
+  const char *imagePath = convertPathJS(ctx, argv[0]);
+  if(!imagePath) return JS_FALSE;
+
+  std_string *s = to_std_string(imagePath);
+  ChowdrenPreloadedImage *preImage = SearchImageHashTable(&ImageHashTable, s);
+  operator_delete((void *)s->lstr.str);
+  operator_delete((void *)s);
+  if(!preImage) return JS_FALSE;
+
+  const char *olidPath = convertPathJS(ctx, argv[1]);
+  if(!olidPath) return JS_FALSE;
+  size_t olid_buf_size;
+  void *olid_buf = readFile(ctx, olidPath, &olid_buf_size);
+
+  if(((uint32_t*)olid_buf)[0] != 0x08D8FFFE && ((uint16_t*)olid_buf)[2] != 0x21DD) return JS_FALSE;
+  olid_buf += 6;
+
+  while(IsImageLoading(preImage->imageId));
+
+  ChowdrenCachedImage *image = get_cached_image(preImage->imageId);
+
+  if(image->texture != 0) return JS_FALSE;
+
+  uint32_t targetWidth = swap32(((uint32_t*)olid_buf)[0]);
+  uint32_t targetHeight = swap32(((uint32_t*)olid_buf)[1]);
+  olid_buf += 16;
+
+  if(targetWidth != image->width || targetHeight != image->height) return JS_FALSE;
+
+  uint32_t imageSize = image->width * image->height * 4;
+
+  while(image->pixels == 0);
+
+  uint8_t* imageData = image->pixels;
+
+  uint32_t compressedSize = swap32(((uint32_t*)olid_buf)[0]);
+  olid_buf += 4;
+
+  int decompressedSize;
+  uint8_t *decompressed = stbi_zlib_decode_malloc(olid_buf, compressedSize, &decompressedSize);
+
+  uint64_t end = (uintptr_t)decompressed + decompressedSize;
+
+  while((uintptr_t)decompressed < end){
+    uint16_t tileX = swap16(((uint16_t*)decompressed)[0]);
+    uint16_t tileY = swap16(((uint16_t*)decompressed)[1]);
+    decompressed += 4;
+    uint32_t tileBitstreamLen = swap32(((uint32_t*)decompressed)[0]);
+    decompressed += 4;
+    uint8_t* diff_stream = decompressed + MASK_SIZE;
+
+    for(int y = 0; y < TILE_SIZE; y++){
+      for(int x = 0; x < TILE_SIZE; x++){
+        int i = y * 16 + x;
+        if(((decompressed[i / 8] >> (i % 8)) & 0x1) == 1){
+          imageData[((tileY * TILE_SIZE + y) * image->width + (tileX * TILE_SIZE + x)) * 4 + 0] = diff_stream[3];
+          imageData[((tileY * TILE_SIZE + y) * image->width + (tileX * TILE_SIZE + x)) * 4 + 1] = diff_stream[2];
+          imageData[((tileY * TILE_SIZE + y) * image->width + (tileX * TILE_SIZE + x)) * 4 + 2] = diff_stream[1];
+          imageData[((tileY * TILE_SIZE + y) * image->width + (tileX * TILE_SIZE + x)) * 4 + 3] = diff_stream[0];
+          diff_stream += 4;
+        }
+      }
+    }
+
+    decompressed += tileBitstreamLen;
+  }
+
+  return JS_TRUE;
 }
 
 JSValue loadImage(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){

@@ -37,9 +37,13 @@ typedef struct ChowdrenCanvas {
 } ChowdrenCanvas;
 
 typedef struct ChowdrenCachedImage {
-  uint8_t unk[32];
+  uint32_t texture;
+  uint8_t unk1[20];
+  const char *filename;
   int width;
   int height;
+  uint8_t unk2[16];
+  void *pixels;
 } ChowdrenCachedImage;
 
 typedef struct ChowdrenPreloadedImage {
@@ -88,5 +92,6 @@ ChowdrenPreloadedImage *SearchImageHashTable(void *hash_table, std_string *path)
 void *SearchAudioPreloadHashTable(void *hash_table, std_string *path);
 void *SearchAudioHashTable(void *hash_table, std_string *path);
 int IsImageLoading(uint32_t id);
+uint8_t *stbi_zlib_decode_malloc(void *buffer, int len, int *outlen);
 
 #endif
