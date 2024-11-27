@@ -2,6 +2,7 @@ const std = @import("std");
 const mem = std.mem;
 const elf = std.elf;
 const Writer = std.fs.File.Writer;
+const SymHashMap = std.StringHashMap(elf.Sym);
 
 const optimize: std.builtin.OptimizeMode = .ReleaseFast;
 
@@ -132,6 +133,7 @@ pub fn build(b: *std.Build) !void {
   patchBin.addIncludePath(b.path("src/lib"));
   patchBin.addIncludePath(b.path("src/chowloader"));
 
+  // Adding patch files step
   const step = b.step("build-extra", "Build the ChowLoader IPS and PCHTXT");
   step.makeFn = buildIpsAndPchtxt;
 
@@ -152,10 +154,25 @@ const Sections = struct {
 
 fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void {
   const allocator = step.owner.allocator;
+  const cwd = std.fs.cwd();
 
+  // Delete build files if an error occur
+  errdefer blk: {
+    var buildDir = cwd.openDir("build", .{ .iterate = true }) catch break :blk;
+    defer buildDir.close();
+
+    var it = buildDir.iterate();
+
+    while(it.next() catch null) |entry| {
+      buildDir.deleteFile(entry.name) catch {};
+    }
+  }
+
+  // Reading elf sections
+  
   std.debug.print("Creating patch files for OMORI {s} ({s})\n\n", .{ GAME_VERSION, NSO_BUILD_ID });
 
-  var bin = try std.fs.cwd().openFile("build/chowloader.elf", .{ .mode = .read_only });
+  var bin = try cwd.openFile("build/chowloader.elf", .{ .mode = .read_only });
   defer bin.close();
 
   const data = try bin.readToEndAlloc(allocator, std.math.maxInt(usize));
@@ -187,12 +204,22 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
   std.debug.print("Base ASM Address: 0x{X}\n", .{sections.text.sh_addr});
   std.debug.print("Base Data Address: 0x{X}\n\n", .{sections.data.sh_addr});
 
-  const symbols: []elf.Sym = try getSymbols(allocator, data, sections.symtab.sh_offset, sections.symtab.sh_size);
-  defer allocator.free(symbols);
+  // Reading symbols and showing their addresses for debugging
 
-  std.debug.print("Debug Addresses: \n", .{});
-  for (symbols) |sym| {
+  var symbols = SymHashMap.init(allocator);
+  defer symbols.deinit();
+
+  data_stream.pos = sections.symtab.sh_offset;
+
+  const symbols_len = @divTrunc(sections.symtab.sh_size, @sizeOf(elf.Sym));
+  try symbols.ensureTotalCapacity(@intCast(symbols_len));
+
+  for (0..symbols_len) |_| {
+    const sym: elf.Sym = try reader.readStruct(elf.Sym);
     const name = getStrName(data, sections.strtab.sh_offset, sym.st_name);
+
+    try symbols.put(name, sym);
+
     if (sym.st_type() == elf.STB_WEAK) { // Functions
       std.debug.print("{s} (func): 0x{X}\n", .{ name, sym.st_value });
     } else if (sym.st_type() == elf.STB_GLOBAL) { // Data
@@ -200,10 +227,12 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
     }
   }
 
+  // Patch files building
+
   std.debug.print("\nBuilding IPS...\n", .{});
 
   { // Create IPS File
-    const file = try std.fs.cwd().createFile("build/" ++ NSO_BUILD_ID ++ ".ips", .{ .truncate = true });
+    const file = try cwd.createFile("build/" ++ NSO_BUILD_ID ++ ".ips", .{ .truncate = true });
     defer file.close();
 
     const writer = file.writer();
@@ -216,25 +245,24 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
     try writeSectionIPS(writer, sections.data.sh_addr - BASE_OFFSET + NSO_HEADER_OFFSET, getData(data, sections.data));
 
     for(patchFuncs) |entryFunc| {
-      for(symbols) |sym| {
-        const name = getStrName(data, sections.strtab.sh_offset, sym.st_name);
-        if(std.mem.eql(u8, name, entryFunc.symbol)){
-          for(entryFunc.addrs) |addr| {
-            if(addr == 0) break;
-            if(entryFunc.is_ptr){
-              try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
-              try writer.writeInt(u16, 8, .big);
-              try writer.writeInt(u64, sym.st_value - BASE_OFFSET, .little);
-            } else {
-              const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
+      if(symbols.get(entryFunc.symbol)) |sym| {
+        for(entryFunc.addrs) |addr| {
+          if(addr == 0) break;
+          if(entryFunc.is_ptr){
+            try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
+            try writer.writeInt(u16, 8, .big);
+            try writer.writeInt(u64, sym.st_value - BASE_OFFSET, .little);
+          } else {
+            const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
 
-              try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
-              try writer.writeInt(u16, 4, .big);
-              try writer.writeInt(u32, createBranch(off, entryFunc.is_linked), .big);
-            }
+            try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
+            try writer.writeInt(u16, 4, .big);
+            try writer.writeInt(u32, createBranch(off, entryFunc.is_linked), .big);
           }
-          break;
         }
+      } else {
+        std.debug.print("Can't find the symbol for {s}!!!\n", .{ entryFunc.symbol });
+        return error.SymbolNotFound;
       }
     }
 
@@ -244,7 +272,7 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
   std.debug.print("Building PCHTXT...\n", .{});
 
   {
-    const file = try std.fs.cwd().createFile("build/" ++ GAME_VERSION ++ ".pchtxt", .{ .truncate = true });
+    const file = try cwd.createFile("build/" ++ GAME_VERSION ++ ".pchtxt", .{ .truncate = true });
     defer file.close();
 
     const writer = file.writer();
@@ -261,43 +289,34 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
     try writeSectionPCHTXT(writer, sections.data.sh_addr - BASE_OFFSET, getData(data, sections.data));
 
     for(patchFuncs) |entryFunc| {
-      for(symbols) |sym| {
-        const name = getStrName(data, sections.strtab.sh_offset, sym.st_name);
-        if(std.mem.eql(u8, name, entryFunc.symbol)){
-          for(entryFunc.addrs) |addr| {
-            if(addr == 0) break;
-            if(entryFunc.is_ptr){
-              try writer.print("{X:0>8} {X:0>16}\n", .{ addr - BASE_OFFSET, @byteSwap(sym.st_value - BASE_OFFSET) });
-            } else {
-              const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
-              try writer.print("{X:0>8} {X:0>8}\n", .{ addr - BASE_OFFSET, createBranch(off, entryFunc.is_linked) });
-            }
+      if(symbols.get(entryFunc.symbol)) |sym| {
+        for(entryFunc.addrs) |addr| {
+          if(addr == 0) break;
+          if(entryFunc.is_ptr){
+            try writer.print("{X:0>8} {X:0>16}\n", .{ addr - BASE_OFFSET, @byteSwap(sym.st_value - BASE_OFFSET) });
+          } else {
+            const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
+            try writer.print("{X:0>8} {X:0>8}\n", .{ addr - BASE_OFFSET, createBranch(off, entryFunc.is_linked) });
           }
-          break;
         }
+      } else {
+        std.debug.print("Can't find the symbol for {s}!!!\n", .{ entryFunc.symbol });
+        return error.SymbolNotFound;
       }
     }
 
     try writer.writeAll("@stop");
   }
 
- std.debug.print("\nSUCCESS!\n", .{});
+  std.debug.print("\nSUCCESS!\n", .{});
+
+  return error._test;
 }
 
 fn getStrName(data: []const u8, offset: usize, index: usize) []const u8 {
   const buf = data[offset + index ..];
   const len = std.mem.indexOfScalar(u8, buf, 0).?;
   return buf[0..len];
-}
-
-fn getSymbols(allocator: mem.Allocator, data: []const u8, offset: usize, size: usize) ![]elf.Sym {
-  const syms = try allocator.alloc(elf.Sym, @divTrunc(size, @sizeOf(elf.Sym)));
-  var stream = std.io.fixedBufferStream(data[offset..]);
-  const reader = stream.reader();
-  for (0..syms.len) |i| {
-      syms[i] = try reader.readStruct(elf.Sym);
-  }
-  return syms;
 }
 
 fn getData(data: []const u8, sym: elf.Elf64_Shdr) []const u8 {
