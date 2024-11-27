@@ -11,81 +11,81 @@ const NSO_BUILD_ID = "318E91DDED917C19DEE42932587DA4C4AD83CB68";
 
 const BASE_OFFSET = 0x8004000;
 
-const PatchFuncs = struct {
-  symbol: []const u8, // Name of the redirect target function
-  is_linked: bool = true, // true for BL inst, false for B inst
-  is_ptr: bool = false, // Directly patch pointer on static data sections
-  addrs: []const u32 // Addresses of branch instructions to replace
+const Patches = struct {
+  symbolName: []const u8, // Name of the redirect target function
+  isBranchLinked: bool = true, // true for BL inst, false for B inst
+  isDataPointer: bool = false, // Patch pointer on static data sections
+  addresses: []const u32 // Addresses to replace
 };
 
-const patchFuncs = [_]PatchFuncs{
+const patches = [_]Patches{
   // Patch Branch Instructions
-  PatchFuncs{
-    .symbol = "initChowLoader",
-    .is_linked = false,
-    .addrs = &[_]u32{ 0xBC5E1A0 }
+  Patches{
+    .symbolName = "initChowLoader",
+    .isBranchLinked = false,
+    .addresses = &[_]u32{ 0xBC5E1A0 }
   },
-  PatchFuncs{
-    .symbol = "initChowLoaderObject",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBBAA0EC }
+  Patches{
+    .symbolName = "initChowLoaderObject",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBBAA0EC }
   },
-  PatchFuncs{
-    .symbol = "initAOT",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBBAA290 }
+  Patches{
+    .symbolName = "initAOT",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBBAA290 }
   },
-  PatchFuncs{
-    .symbol = "hookJSAOT",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBB3FDF8 }
+  Patches{
+    .symbolName = "hookJSAOT",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBB3FDF8 }
   },
-  PatchFuncs{
-    .symbol = "hookJSVARREF",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBB3FEF8 }
+  Patches{
+    .symbolName = "hookJSVARREF",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBB3FEF8 }
   },
-  PatchFuncs{
-    .symbol = "hookJSVAL",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBB3FF78 }
+  Patches{
+    .symbolName = "hookJSVAL",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBB3FF78 }
   },
-  PatchFuncs{
-    .symbol = "hookBuildBacktrace",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBAF2F1C, 0xBAF56F0, 0xBAF5888, 0xBB053D4, 0xBB75CE0 }
+  Patches{
+    .symbolName = "hookBuildBacktrace",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBAF2F1C, 0xBAF56F0, 0xBAF5888, 0xBB053D4, 0xBB75CE0 }
   },
-  PatchFuncs{
-    .symbol = "hookThrow",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xA3DEEFC }
+  Patches{
+    .symbolName = "hookThrow",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xA3DEEFC }
   },
-  PatchFuncs{
-    .symbol = "hookFonts",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0x80B1398 }
+  Patches{
+    .symbolName = "hookFonts",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0x80B1398 }
   },
-  PatchFuncs{
-    .symbol = "hookBorder",
-    .is_linked = true,
-    .addrs = &[_]u32{ 0xBB9FD58 }
+  Patches{
+    .symbolName = "hookBorder",
+    .isBranchLinked = true,
+    .addresses = &[_]u32{ 0xBB9FD58 }
   },
 
   // Patch Static Data Pointers
-  PatchFuncs{
-    .symbol = "qjs_malloc",
-    .is_ptr = true,
-    .addrs = &[_]u32{ 0xBF13640 }
+  Patches{
+    .symbolName = "qjs_malloc",
+    .isDataPointer = true,
+    .addresses = &[_]u32{ 0xBF13640 }
   },
-  PatchFuncs{
-    .symbol = "qjs_free",
-    .is_ptr = true,
-    .addrs = &[_]u32{ 0xBF13648 }
+  Patches{
+    .symbolName = "qjs_free",
+    .isDataPointer = true,
+    .addresses = &[_]u32{ 0xBF13648 }
   },
-  PatchFuncs{
-    .symbol = "qjs_realloc",
-    .is_ptr = true,
-    .addrs = &[_]u32{ 0xBF13650 }
+  Patches{
+    .symbolName = "qjs_realloc",
+    .isDataPointer = true,
+    .addresses = &[_]u32{ 0xBF13650 }
   },
 };
 
@@ -112,8 +112,8 @@ pub fn build(b: *std.Build) !void {
   patchBin.want_lto = true; // Reduce bundle size on Debug optimize mode
   patchBin.entry = .disabled;
 
-  inline for(patchFuncs) |patchFunc| {
-    patchBin.forceUndefinedSymbol(patchFunc.symbol); // Emit symbol on debug info on Releases optimize modes
+  inline for(patches) |patch| {
+    patchBin.forceUndefinedSymbol(patch.symbolName); // Emit symbol on debug info on Releases optimize modes
   }
 
   patchBin.setLinkerScript(b.path("linker/" ++ GAME_VERSION ++ ".ld"));
@@ -137,14 +137,14 @@ pub fn build(b: *std.Build) !void {
   const step = b.step("build-extra", "Build the ChowLoader IPS and PCHTXT");
   step.makeFn = buildIpsAndPchtxt;
 
-  const install = b.addInstallArtifact(patchBin, .{ .dest_dir = .{ .override = .{ .custom = "../build" } } });
+  const installArtifact = b.addInstallArtifact(patchBin, .{ .dest_dir = .{ .override = .{ .custom = "../build" } } });
 
-  step.dependOn(&install.step);
+  step.dependOn(&installArtifact.step);
 
   b.getInstallStep().dependOn(step);
 }
 
-const Sections = struct {
+const ELFSections = struct {
   text: elf.Elf64_Shdr,
   data: elf.Elf64_Shdr,
   shstrtab: elf.Elf64_Shdr,
@@ -175,55 +175,55 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
   var bin = try cwd.openFile("build/chowloader.elf", .{ .mode = .read_only });
   defer bin.close();
 
-  const data = try bin.readToEndAlloc(allocator, std.math.maxInt(usize));
-  defer allocator.free(data);
+  const binData = try bin.readToEndAlloc(allocator, std.math.maxInt(usize));
+  defer allocator.free(binData);
 
-  var data_stream = std.io.fixedBufferStream(data);
+  var binStream = std.io.fixedBufferStream(binData);
 
-  const reader = data_stream.reader();
+  const binReader = binStream.reader();
 
-  const header = try elf.Header.read(&data_stream);
+  const elfHeader = try elf.Header.read(&binStream);
 
-  data_stream.pos = header.shoff + header.shstrndx * @sizeOf(elf.Elf64_Shdr);
+  binStream.pos = elfHeader.shoff + elfHeader.shstrndx * @sizeOf(elf.Elf64_Shdr);
 
-  var sections: Sections = undefined;
-  sections.shstrtab = try reader.readStruct(elf.Elf64_Shdr);
+  var sections: ELFSections = undefined;
+  sections.shstrtab = try binReader.readStruct(elf.Elf64_Shdr);
 
-  var section_header_it = header.section_header_iterator(&data_stream);
+  var sectionsIterator = elfHeader.section_header_iterator(&binStream);
 
-  while (section_header_it.next() catch null) |section| {
-    const name = getStrName(data, sections.shstrtab.sh_offset, section.sh_name);
-    const type_info = @typeInfo(Sections).Struct.fields;
-    inline for (type_info) |field| {
-      if (std.mem.eql(u8, name, "." ++ field.name)) {
+  while (sectionsIterator.next() catch null) |section| {
+    const sectionName = getStrName(binData, sections.shstrtab.sh_offset, section.sh_name);
+    const typeInfo = @typeInfo(ELFSections).Struct.fields;
+    inline for (typeInfo) |field| {
+      if (std.mem.eql(u8, sectionName, "." ++ field.name)) {
         @field(sections, field.name) = section;
       }
     }
   }
 
-  std.debug.print("Base ASM Address: 0x{X}\n", .{sections.text.sh_addr});
-  std.debug.print("Base Data Address: 0x{X}\n\n", .{sections.data.sh_addr});
+  std.debug.print("Base ASM Address: 0x{X}\n", .{ sections.text.sh_addr });
+  std.debug.print("Base Data Address: 0x{X}\n\n", .{ sections.data.sh_addr });
 
   // Reading symbols and showing their addresses for debugging
 
   var symbols = SymHashMap.init(allocator);
   defer symbols.deinit();
 
-  data_stream.pos = sections.symtab.sh_offset;
+  binStream.pos = sections.symtab.sh_offset;
 
-  const symbols_len = @divTrunc(sections.symtab.sh_size, @sizeOf(elf.Sym));
-  try symbols.ensureTotalCapacity(@intCast(symbols_len));
+  const symbolsCount = @divTrunc(sections.symtab.sh_size, @sizeOf(elf.Sym));
+  try symbols.ensureTotalCapacity(@intCast(symbolsCount));
 
-  for (0..symbols_len) |_| {
-    const sym: elf.Sym = try reader.readStruct(elf.Sym);
-    const name = getStrName(data, sections.strtab.sh_offset, sym.st_name);
+  for (0..symbolsCount) |_| {
+    const symbol: elf.Sym = try binReader.readStruct(elf.Sym);
+    const symbolName = getStrName(binData, sections.strtab.sh_offset, symbol.st_name);
 
-    try symbols.put(name, sym);
+    try symbols.put(symbolName, symbol);
 
-    if (sym.st_type() == elf.STB_WEAK) { // Functions
-      std.debug.print("{s} (func): 0x{X}\n", .{ name, sym.st_value });
-    } else if (sym.st_type() == elf.STB_GLOBAL) { // Data
-      std.debug.print("{s} (data): 0x{X}\n", .{ name, sym.st_value });
+    if (symbol.st_type() == elf.STB_WEAK) { // Functions
+      std.debug.print("{s} (func): 0x{X}\n", .{ symbolName, symbol.st_value });
+    } else if (symbol.st_type() == elf.STB_GLOBAL) { // Data
+      std.debug.print("{s} (data): 0x{X}\n", .{ symbolName, symbol.st_value });
     }
   }
 
@@ -241,27 +241,26 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
 
     try writer.writeAll("IPS32"); // HEADER MAGIC
 
-    try writeSectionIPS(writer, sections.text.sh_addr - BASE_OFFSET + NSO_HEADER_OFFSET, getData(data, sections.text));
-    try writeSectionIPS(writer, sections.data.sh_addr - BASE_OFFSET + NSO_HEADER_OFFSET, getData(data, sections.data));
+    try writeSectionIPS(writer, sections.text.sh_addr - BASE_OFFSET + NSO_HEADER_OFFSET, getSectionData(binData, sections.text));
+    try writeSectionIPS(writer, sections.data.sh_addr - BASE_OFFSET + NSO_HEADER_OFFSET, getSectionData(binData, sections.data));
 
-    for(patchFuncs) |entryFunc| {
-      if(symbols.get(entryFunc.symbol)) |sym| {
-        for(entryFunc.addrs) |addr| {
-          if(addr == 0) break;
-          if(entryFunc.is_ptr){
-            try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
+    for(patches) |patch| {
+      if(symbols.get(patch.symbolName)) |symbol| {
+        for(patch.addresses) |address| {
+          if(patch.isDataPointer){
+            try writer.writeInt(u32, address - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
             try writer.writeInt(u16, 8, .big);
-            try writer.writeInt(u64, sym.st_value - BASE_OFFSET, .little);
+            try writer.writeInt(u64, symbol.st_value - BASE_OFFSET, .little);
           } else {
-            const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
+            const off: i28 = @intCast(@as(isize, @intCast(symbol.st_value)) - @as(isize, @intCast(address)));
 
-            try writer.writeInt(u32, addr - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
+            try writer.writeInt(u32, address - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
             try writer.writeInt(u16, 4, .big);
-            try writer.writeInt(u32, createBranch(off, entryFunc.is_linked), .big);
+            try writer.writeInt(u32, createBranch(off, patch.isBranchLinked), .big);
           }
         }
       } else {
-        std.debug.print("Can't find the symbol for {s}!!!\n", .{ entryFunc.symbol });
+        std.debug.print("Can't find the symbol for {s}!!!\n", .{ patch.symbolName });
         return error.SymbolNotFound;
       }
     }
@@ -271,7 +270,7 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
 
   std.debug.print("Building PCHTXT...\n", .{});
 
-  {
+  { // Create PCHTXT file
     const file = try cwd.createFile("build/" ++ GAME_VERSION ++ ".pchtxt", .{ .truncate = true });
     defer file.close();
 
@@ -285,22 +284,21 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
       \\
     );
 
-    try writeSectionPCHTXT(writer, sections.text.sh_addr - BASE_OFFSET, getData(data, sections.text));
-    try writeSectionPCHTXT(writer, sections.data.sh_addr - BASE_OFFSET, getData(data, sections.data));
+    try writeSectionPCHTXT(writer, sections.text.sh_addr - BASE_OFFSET, getSectionData(binData, sections.text));
+    try writeSectionPCHTXT(writer, sections.data.sh_addr - BASE_OFFSET, getSectionData(binData, sections.data));
 
-    for(patchFuncs) |entryFunc| {
-      if(symbols.get(entryFunc.symbol)) |sym| {
-        for(entryFunc.addrs) |addr| {
-          if(addr == 0) break;
-          if(entryFunc.is_ptr){
-            try writer.print("{X:0>8} {X:0>16}\n", .{ addr - BASE_OFFSET, @byteSwap(sym.st_value - BASE_OFFSET) });
+    for(patches) |patch| {
+      if(symbols.get(patch.symbolName)) |symbol| {
+        for(patch.addresses) |address| {
+          if(patch.isDataPointer){
+            try writer.print("{X:0>8} {X:0>16}\n", .{ address - BASE_OFFSET, @byteSwap(symbol.st_value - BASE_OFFSET) });
           } else {
-            const off: i28 = @intCast(@as(isize, @intCast(sym.st_value)) - @as(isize, @intCast(addr)));
-            try writer.print("{X:0>8} {X:0>8}\n", .{ addr - BASE_OFFSET, createBranch(off, entryFunc.is_linked) });
+            const off: i28 = @intCast(@as(isize, @intCast(symbol.st_value)) - @as(isize, @intCast(address)));
+            try writer.print("{X:0>8} {X:0>8}\n", .{ address - BASE_OFFSET, createBranch(off, patch.isBranchLinked) });
           }
         }
       } else {
-        std.debug.print("Can't find the symbol for {s}!!!\n", .{ entryFunc.symbol });
+        std.debug.print("Can't find the symbol for {s}!!!\n", .{ patch.symbolName });
         return error.SymbolNotFound;
       }
     }
@@ -311,63 +309,63 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
   std.debug.print("\nSUCCESS!\n", .{});
 }
 
-fn getStrName(data: []const u8, offset: usize, index: usize) []const u8 {
-  const buf = data[offset + index ..];
+fn getStrName(data: []const u8, sectionOffset: usize, nameOffset: usize) []const u8 {
+  const buf = data[sectionOffset + nameOffset ..];
   const len = std.mem.indexOfScalar(u8, buf, 0).?;
   return buf[0..len];
 }
 
-fn getData(data: []const u8, sym: elf.Elf64_Shdr) []const u8 {
-  return data[sym.sh_offset .. sym.sh_offset + sym.sh_size];
+fn getSectionData(elfData: []const u8, section: elf.Elf64_Shdr) []const u8 {
+  return elfData[section.sh_offset .. section.sh_offset + section.sh_size];
 }
 
-const BytesLenPerLine = 0x8;
+const SectionChunkLen = 0x8;
 
-fn writeSectionIPS(writer: Writer, offset: u64, data: []const u8) !void {
-  const pair_end = @divTrunc(data.len, BytesLenPerLine);
-  for(0..pair_end) |i| {
-    const off = i * BytesLenPerLine;
-    try writer.writeInt(u32, @intCast(offset + off), .big);
-    try writer.writeInt(u16, BytesLenPerLine, .big);
-    try writer.writeAll(data[off .. off + BytesLenPerLine]);
+fn writeSectionIPS(writer: Writer, sectionOffset: u64, sectionData: []const u8) !void {
+  const chunkCount = @divTrunc(sectionData.len, SectionChunkLen);
+  for(0..chunkCount) |i| {
+    const chunkOffset = i * SectionChunkLen;
+    try writer.writeInt(u32, @intCast(sectionOffset + chunkOffset), .big);
+    try writer.writeInt(u16, SectionChunkLen, .big);
+    try writer.writeAll(sectionData[chunkOffset .. chunkOffset + SectionChunkLen]);
   }
 
-  const diff = data.len - pair_end * BytesLenPerLine;
-  if(diff > 0){
-    const off = pair_end * BytesLenPerLine;
-    try writer.writeInt(u32, @intCast(offset + off), .big);
-    try writer.writeInt(u16, @intCast(diff), .big);
-    try writer.writeAll(data[off .. off + diff]);
+  const finalBytesLength = sectionData.len - chunkCount * SectionChunkLen;
+  if(finalBytesLength > 0){
+    const chunkOffset = chunkCount * SectionChunkLen;
+    try writer.writeInt(u32, @intCast(sectionOffset + chunkOffset), .big);
+    try writer.writeInt(u16, @intCast(finalBytesLength), .big);
+    try writer.writeAll(sectionData[chunkOffset .. chunkOffset + finalBytesLength]);
   }
 }
 
-fn writeSectionPCHTXT(writer: Writer, offset: u64, data: []const u8) !void {
-  const pair_end = @divTrunc(data.len, BytesLenPerLine);
-  for(0..pair_end) |i| {
-    const off = i * BytesLenPerLine;
-    try writer.print("{X:0>8} ", .{ offset + off });
-    for(0..BytesLenPerLine) |bi| {
-      try writer.print("{X:0>2}", .{ data[off + bi] });
+fn writeSectionPCHTXT(writer: Writer, sectionOffset: u64, sectionData: []const u8) !void {
+  const chunkCount = @divTrunc(sectionData.len, SectionChunkLen);
+  for(0..chunkCount) |i| {
+    const chunkOffset = i * SectionChunkLen;
+    try writer.print("{X:0>8} ", .{ sectionOffset + chunkOffset });
+    for(0..SectionChunkLen) |byteIndex| {
+      try writer.print("{X:0>2}", .{ sectionData[chunkOffset + byteIndex] });
     }
     try writer.writeAll("\n");
   }
 
-  const diff = data.len - pair_end * BytesLenPerLine;
-  if(diff > 0){
-    const off = pair_end * BytesLenPerLine;
-    try writer.print("{X:0>8} ", .{ offset + off });
-    for(0..diff) |bi| {
-      try writer.print("{X:0>2}", .{ data[off + bi] });
+  const finalBytesLength = sectionData.len - chunkCount * SectionChunkLen;
+  if(finalBytesLength > 0){
+    const chunkOffset = chunkCount * SectionChunkLen;
+    try writer.print("{X:0>8} ", .{ sectionOffset + chunkOffset });
+    for(0..finalBytesLength) |byteIndex| {
+      try writer.print("{X:0>2}", .{ sectionData[chunkOffset + byteIndex] });
     }
     try writer.writeAll("\n");
   }
 }
 
-fn createBranch(offset: i28, is_linked: bool) u32 {
-  return if(is_linked)
-    createARM64BranchLink(offset)
+fn createBranch(pcOffset: i28, isLinked: bool) u32 {
+  return if(isLinked)
+    createARM64BranchLink(pcOffset)
   else
-    createARM64Branch(offset);
+    createARM64Branch(pcOffset);
 }
 
 // Arm® Architecture Reference Manual for A-profile architecture
@@ -381,8 +379,8 @@ const Inst_B = packed struct(u32) {
   reserved: u6 = 0b000101,
 };
 
-fn createARM64Branch(offset: i28) u32 {
-  const inst = Inst_B{ .imm26 = @intCast(offset >> 2) };
+fn createARM64Branch(pcOffset: i28) u32 {
+  const inst = Inst_B{ .imm26 = @intCast(pcOffset >> 2) };
   return std.mem.readInt(u32, std.mem.asBytes(&inst), .big);
 }
 
@@ -393,7 +391,7 @@ const Inst_BL = packed struct(u32) {
   reserved: u6 = 0b100101,
 };
 
-fn createARM64BranchLink(offset: i28) u32 { // C6.2.35
-  const inst = Inst_BL{ .imm26 = @intCast(offset >> 2) };
+fn createARM64BranchLink(pcOffset: i28) u32 { // C6.2.35
+  const inst = Inst_BL{ .imm26 = @intCast(pcOffset >> 2) };
   return std.mem.readInt(u32, std.mem.asBytes(&inst), .big);
 }
