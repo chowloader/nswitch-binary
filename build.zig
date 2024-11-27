@@ -309,8 +309,6 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
   }
 
   std.debug.print("\nSUCCESS!\n", .{});
-
-  return error._test;
 }
 
 fn getStrName(data: []const u8, offset: usize, index: usize) []const u8 {
