@@ -199,12 +199,11 @@ extern int chowdren_main();
 
 extern atomic_int_fast64_t semaphore;
 
-extern int semaphore_init();
-extern void semaphore_wait();
-extern void semaphore_signal();
+void semaphore_wait();
+void semaphore_signal();
 
-extern void *qjs_malloc(JSMallocState *state, size_t size);
-extern void qjs_free(JSMallocState *state, void *ptr);
-extern void *qjs_realloc(JSMallocState *state, void *ptr, size_t size);
+void *qjs_malloc(JSMallocState *state, size_t size);
+void qjs_free(JSMallocState *state, void *ptr);
+void *qjs_realloc(JSMallocState *state, void *ptr, size_t size);
 
 #endif

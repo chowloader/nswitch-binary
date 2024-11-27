@@ -233,6 +233,7 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
               try writer.writeInt(u32, createBranch(off, entryFunc.is_linked), .big);
             }
           }
+          break;
         }
       }
     }
@@ -272,6 +273,7 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
               try writer.print("{X:0>8} {X:0>8}\n", .{ addr - BASE_OFFSET, createBranch(off, entryFunc.is_linked) });
             }
           }
+          break;
         }
       }
     }
