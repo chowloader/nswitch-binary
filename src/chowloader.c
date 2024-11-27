@@ -67,7 +67,3 @@ JSValue debugger(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *
   return JS_UNDEFINED;
 }
 #endif
-
-int main(){
-  return 0;
-}

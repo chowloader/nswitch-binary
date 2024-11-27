@@ -1,0 +1,13 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "chowloader",
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/chowloader",
+        "${workspaceFolder}/src/lib"
+      ]
+    }
+  ]
+}

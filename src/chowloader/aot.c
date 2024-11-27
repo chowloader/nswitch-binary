@@ -74,8 +74,6 @@ JSValue createAOTObject(JSContext *ctx){
   return aot;
 }
 
-JSValue JSVALOffset = 0;
-
 JSValue findJSVALNative(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   JSValue* offset = &JSVALOffset;
 

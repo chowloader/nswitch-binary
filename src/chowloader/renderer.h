@@ -3,10 +3,10 @@
 
 #include "../lib/imports.h"
 
-extern char isDrawing;
-extern uint64_t Render_offset;
-extern uint64_t Render_offsetf;
-extern uint32_t CanvasClassID;
+extern volatile char isDrawing;
+extern volatile uint64_t Render_offset;
+extern volatile uint64_t Render_offsetf;
+extern volatile uint32_t CanvasClassID;
 
 JSValue createRendererObject(JSContext *ctx);
 JSValue clear(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);

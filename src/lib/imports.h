@@ -2,7 +2,6 @@
 #define __IMPORTS_H
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
 #include "chowjs.h"

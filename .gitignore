@@ -1,6 +1,2 @@
-**/.DS_Store
-**/main.pchtxt
-**/node_modules
-**/chowloader.o
-**/chowloader.o.dSYM
-**/.vscode
+/.zig-cache
+/build

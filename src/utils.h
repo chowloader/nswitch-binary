@@ -23,5 +23,4 @@ uint16_t swap16(uint16_t num);
 uint32_t swap32(uint32_t num);
 uint64_t swap64(uint64_t num);
 
-
 #endif

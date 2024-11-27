@@ -10,7 +10,7 @@ JSValue hookJSVAL(JSContext *ctx, int count, void *va_list);
 JSValue hookJSVARREF(JSContext *ctx, int count, void *va_list);
 void initAOT(JSContext *ctx);
 
-extern JSValue JSVALOffset;
+extern volatile JSValue JSVALOffset;
 
 JSValue createAOTObject(JSContext *ctx);
 JSValue findJSVALNative(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);

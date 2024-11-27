@@ -18,10 +18,6 @@ JSValue createRendererObject(JSContext *ctx){
   return renderer;
 }
 
-char isDrawing = 0;
-uint64_t Render_offset = 0;
-uint64_t Render_offsetf = 0;
-
 JSValue clear(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   if(isDrawing != 1){
     isDrawing = 1;
@@ -52,8 +48,6 @@ JSValue draw(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv
   isDrawing = 0;
   return JS_UNDEFINED;
 }
-
-uint32_t CanvasClassID = 1;
 
 JSValue getCanvasDimension(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv){
   ChowdrenCanvas* canvas = JS_GetOpaque(argv[0], CanvasClassID);

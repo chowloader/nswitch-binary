@@ -1,0 +1,9 @@
+{
+  "zig.formattingProvider": "off",
+  "editor.tabSize": 2,
+  "files.associations": {
+    "chowjs.h": "c",
+    "atomic": "c",
+    "cstdint": "cpp"
+  }
+}
