@@ -11,10 +11,15 @@ const NSO_BUILD_ID = "318E91DDED917C19DEE42932587DA4C4AD83CB68";
 
 const BASE_OFFSET = 0x8004000;
 
+const PatchType = enum {
+  Branch,
+  BranchLink,
+  StaticData
+};
+
 const Patches = struct {
   symbolName: []const u8, // Name of the redirect target function
-  isBranchLinked: bool = true, // true for BL inst, false for B inst
-  isDataPointer: bool = false, // Patch pointer on static data sections
+  patchType: PatchType,
   addresses: []const u32 // Addresses to replace
 };
 
@@ -22,69 +27,69 @@ const patches = [_]Patches{
   // Patch Branch Instructions
   Patches{
     .symbolName = "initChowLoader",
-    .isBranchLinked = false,
+    .patchType = .Branch,
     .addresses = &[_]u32{ 0xBC5E1A0 }
   },
   Patches{
     .symbolName = "initChowLoaderObject",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBBAA0EC }
   },
   Patches{
     .symbolName = "initAOT",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBBAA290 }
   },
   Patches{
     .symbolName = "hookJSAOT",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBB3FDF8 }
   },
   Patches{
     .symbolName = "hookJSVARREF",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBB3FEF8 }
   },
   Patches{
     .symbolName = "hookJSVAL",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBB3FF78 }
   },
   Patches{
     .symbolName = "hookBuildBacktrace",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBAF2F1C, 0xBAF56F0, 0xBAF5888, 0xBB053D4, 0xBB75CE0 }
   },
   Patches{
     .symbolName = "hookThrow",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xA3DEEFC }
   },
   Patches{
     .symbolName = "hookFonts",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0x80B1398 }
   },
   Patches{
     .symbolName = "hookBorder",
-    .isBranchLinked = true,
+    .patchType = .BranchLink,
     .addresses = &[_]u32{ 0xBB9FD58 }
   },
 
   // Patch Static Data Pointers
   Patches{
     .symbolName = "qjs_malloc",
-    .isDataPointer = true,
+    .patchType = .StaticData,
     .addresses = &[_]u32{ 0xBF13640 }
   },
   Patches{
     .symbolName = "qjs_free",
-    .isDataPointer = true,
+    .patchType = .StaticData,
     .addresses = &[_]u32{ 0xBF13648 }
   },
   Patches{
     .symbolName = "qjs_realloc",
-    .isDataPointer = true,
+    .patchType = .StaticData,
     .addresses = &[_]u32{ 0xBF13650 }
   },
 };
@@ -247,16 +252,19 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
     for(patches) |patch| {
       if(symbols.get(patch.symbolName)) |symbol| {
         for(patch.addresses) |address| {
-          if(patch.isDataPointer){
-            try writer.writeInt(u32, address - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
-            try writer.writeInt(u16, 8, .big);
-            try writer.writeInt(u64, symbol.st_value - BASE_OFFSET, .little);
-          } else {
-            const off: i28 = @intCast(@as(isize, @intCast(symbol.st_value)) - @as(isize, @intCast(address)));
+          try writer.writeInt(u32, address - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
+          switch(patch.patchType){
+            .Branch, .BranchLink => {
+              const off: i28 = @intCast(@as(isize, @intCast(symbol.st_value)) - @as(isize, @intCast(address)));
+              const inst = if(patch.patchType == .Branch) createARM64Branch(off) else createARM64BranchLink(off);
 
-            try writer.writeInt(u32, address - BASE_OFFSET + NSO_HEADER_OFFSET, .big);
-            try writer.writeInt(u16, 4, .big);
-            try writer.writeInt(u32, createBranch(off, patch.isBranchLinked), .big);
+              try writer.writeInt(u16, 4, .big);
+              try writer.writeInt(u32, inst, .big);
+            },
+            .StaticData => {
+              try writer.writeInt(u16, 8, .big);
+              try writer.writeInt(u64, symbol.st_value - BASE_OFFSET, .little);
+            }
           }
         }
       } else {
@@ -289,14 +297,17 @@ fn buildIpsAndPchtxt(step: *std.Build.Step, _: std.Progress.Node) anyerror!void 
 
     for(patches) |patch| {
       if(symbols.get(patch.symbolName)) |symbol| {
-        for(patch.addresses) |address| {
-          if(patch.isDataPointer){
-            try writer.print("{X:0>8} {X:0>16}\n", .{ address - BASE_OFFSET, @byteSwap(symbol.st_value - BASE_OFFSET) });
-          } else {
+        for(patch.addresses) |address| switch(patch.patchType) {
+          .Branch, .BranchLink => {
             const off: i28 = @intCast(@as(isize, @intCast(symbol.st_value)) - @as(isize, @intCast(address)));
-            try writer.print("{X:0>8} {X:0>8}\n", .{ address - BASE_OFFSET, createBranch(off, patch.isBranchLinked) });
+            const inst = if(patch.patchType == .Branch) createARM64Branch(off) else createARM64BranchLink(off);
+
+            try writer.print("{X:0>8} {X:0>8}\n", .{ address - BASE_OFFSET, inst });
+          },
+          .StaticData => {
+            try writer.print("{X:0>8} {X:0>16}\n", .{ address - BASE_OFFSET, @byteSwap(symbol.st_value - BASE_OFFSET) });
           }
-        }
+        };
       } else {
         std.debug.print("Can't find the symbol for {s}!!!\n", .{ patch.symbolName });
         return error.SymbolNotFound;
@@ -359,13 +370,6 @@ fn writeSectionPCHTXT(writer: Writer, sectionOffset: u64, sectionData: []const u
     }
     try writer.writeAll("\n");
   }
-}
-
-fn createBranch(pcOffset: i28, isLinked: bool) u32 {
-  return if(isLinked)
-    createARM64BranchLink(pcOffset)
-  else
-    createARM64Branch(pcOffset);
 }
 
 // Arm® Architecture Reference Manual for A-profile architecture
